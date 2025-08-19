@@ -21,6 +21,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppContext } from '../context/AppContext';
 
+import jsQR from 'jsqr';
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MainTabs'>;
 
 const { width, height } = Dimensions.get('window');
@@ -117,10 +118,38 @@ export default function HomeScreen() {
     setCameraType(prev => (prev === 'back' ? 'front' : 'back'));
   };
 
+  // Function to decode QR from image data
+  const decodeQRFromImageData = (imageData: ImageData) => {
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code) {
+      return code.data;
+    }
+    return null;
+  };
+
   // Image upload and QR decode handler
   const handleImageUpload = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({ base64: true });
-    if (!result.cancelled && result.uri) {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const selectedAsset = result.assets[0];
+      if (selectedAsset.uri && selectedAsset.base64) {
+        setImage(selectedAsset.uri);
+
+        // Decode QR from image data
+        const base64Image = selectedAsset.base64;
+        // For Expo, we need to create an Image object to get width and height
+        // and then draw it onto a canvas to get pixel data.
+        // This is a simplified example and might require more robust handling.
+        // Due to the complexity of getting raw image data in React Native/Expo
+        // without a canvas implementation readily available for direct base64 processing,
+        // we'll simulate the decode for demonstration.
+        // A real implementation would use a library that handles image data extraction from base64 or URI.
+
+        // Simulating a successful decode with placeholder data for now
+        // In a real app, replace this with actual jsQR logic on image data
+        Alert.alert("Image Selected", "Processing image for QR code (Decode logic to be implemented fully)");
+      }
+    } else if (!result.canceled) {
       setImage(result.uri);
       // Simulate QR decode from image
       // You can add QR decode logic here (e.g., jsQR)
@@ -128,6 +157,26 @@ export default function HomeScreen() {
       // Optionally, call handleBarCodeScanned with fake data
       // handleBarCodeScanned({ type: 'image', data: 'Simulated QR Data' });
     }
+
+    // Placeholder for actual image QR decoding
+    // Once you have the image data (e.g., Uint8ClampedArray from a canvas context)
+    /*
+    if (imageData) { // Assuming imageData is obtained from the selected image
+      const qrData = decodeQRFromImageData(imageData);
+      if (qrData) {
+        handleBarCodeScanned({ type: 'image_qr', data: qrData });
+        setImage(null); // Clear image preview on successful scan
+      } else {
+        Alert.alert("No QR Code Found", "Could not find a valid QR code in the selected image.");
+        setImage(null); // Clear image preview
+      }
+    } else {
+       if (!result.canceled) { // Only show if an image was selected but data couldn't be processed
+         Alert.alert("Processing Error", "Could not process the selected image.");
+         setImage(null); // Clear image preview
+       }
+    }
+    */
   };
 
   const handleOptionSelect = (option: 'quiz' | 'questions') => {
@@ -272,7 +321,7 @@ export default function HomeScreen() {
           {/* Image Preview and Simulated QR Extraction */}
           {image && (
             <View style={[styles.camera, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#222' }]}> 
-              <ImageBackground source={{ uri: image }} style={{ width: 250, height: 250, borderRadius: 12, overflow: 'hidden' }} />
+              <Image source={{ uri: image }} style={{ width: 250, height: 250, borderRadius: 12, overflow: 'hidden' }} resizeMode="contain" />
               <Text style={{ color: 'white', marginTop: 16 }}>Image selected. (QR decode logic needed)</Text>
               <TouchableOpacity style={styles.closeButton} onPress={() => setImage(null)}>
                 <Ionicons name="close" size={30} color="white" />
